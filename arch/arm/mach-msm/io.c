@@ -184,6 +184,7 @@ static struct map_desc msmzirc_io_desc[] __initdata = {
 #endif
 };
 
+<<<<<<< HEAD
 void __init msm_map_msmzirc_io(void)
 {
 	iotable_init(msmzirc_io_desc, ARRAY_SIZE(msmzirc_io_desc));
