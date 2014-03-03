@@ -286,6 +286,7 @@ static struct inet_frag_queue *inet_frag_intern(struct netns_frags *nf,
 	inet_frag_lru_add(nf, qp);
 	spin_unlock(&hb->chain_lock);
 	read_unlock(&f->lock);
+
 	return qp;
 }
 
