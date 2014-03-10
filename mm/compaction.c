@@ -306,11 +306,11 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
 			cursor += isolated - 1;
 			continue;
 		}
-
 isolate_fail:
 		if (strict)
 			break;
-
+		else
+			continue;
 	}
 
 	trace_mm_compaction_isolate_freepages(nr_scanned, total_isolated);
