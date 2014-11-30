@@ -289,5 +289,8 @@ config DYNAMIC_FSYNC
 	help
 	  An experimental file sync control using pm suspend / resume drivers
 
+config ASYNC_FSYNC
+	bool "asynchronous fsync"
+	default y
 
 endmenu
