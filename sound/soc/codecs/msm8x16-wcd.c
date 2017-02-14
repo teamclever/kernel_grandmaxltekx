@@ -30,7 +30,6 @@
 #include <linux/mfd/wcd9xxx/pdata.h>
 #include <linux/mfd/wcd9xxx/core.h>
 #include <linux/qdsp6v2/apr.h>
-#include <linux/timer.h>
 #include <linux/workqueue.h>
 #include <linux/sched.h>
 #include <sound/q6afe-v2.h>
@@ -446,10 +445,23 @@ static int msm8x16_wcd_readable(struct snd_soc_codec *ssc, unsigned int reg)
 	return msm8x16_wcd_reg_readable[reg];
 }
 
-static int msm8x16_wcd_write(struct snd_soc_codec *codec, unsigned int reg,
+#ifdef CONFIG_SOUND_CONTROL_HAX_3_GPL
+extern int snd_ctrl_enabled;
+extern int snd_hax_reg_access(unsigned int);
+extern unsigned int snd_hax_cache_read(unsigned int);
+extern void snd_hax_cache_write(unsigned int, unsigned int);
+#endif
+
+#ifndef CONFIG_SOUND_CONTROL_HAX_3_GPL 
+static
+#endif
+int msm8x16_wcd_write(struct snd_soc_codec *codec, unsigned int reg,
 			     unsigned int value)
 {
 	int ret;
+#ifdef CONFIG_SOUND_CONTROL_HAX_3_GPL
+	int val;
+#endif
 
 	dev_dbg(codec->dev, "%s: Write from reg 0x%x val 0x%x\n",
 					__func__, reg, value);
@@ -464,9 +476,31 @@ static int msm8x16_wcd_write(struct snd_soc_codec *codec, unsigned int reg,
 				reg, ret);
 	}
 	return __msm8x16_wcd_reg_write(codec, reg, (u8)value);
-}
+#ifdef CONFIG_SOUND_CONTROL_HAX_3_GPL
+		if (!snd_ctrl_enabled)
+			return __msm8x16_wcd_reg_write(codec, reg, (u8)value);
 
-static unsigned int msm8x16_wcd_read(struct snd_soc_codec *codec,
+		if (!snd_hax_reg_access(reg)) {
+			if (!((val = snd_hax_cache_read(reg)) != -1)) {
+				val = wcd9xxx_reg_read_safe(codec->control_data, reg);
+			}
+		} else {
+			snd_hax_cache_write(reg, value);
+			val = value;
+		}
+		return __msm8x16_wcd_reg_write(codec, reg, val);
+#else
+		return __msm8x16_wcd_reg_write(codec, reg, (u8)value);
+#endif
+}
+#ifdef CONFIG_SOUND_CONTROL_HAX_3_GPL
+EXPORT_SYMBOL(msm8x16_wcd_write);
+#endif
+
+#ifndef CONFIG_SOUND_CONTROL_HAX_3_GPL 
+static
+#endif
+unsigned int msm8x16_wcd_read(struct snd_soc_codec *codec,
 				unsigned int reg)
 {
 	unsigned int val;
@@ -493,6 +527,9 @@ static unsigned int msm8x16_wcd_read(struct snd_soc_codec *codec,
 	return val;
 }
 
+#ifdef CONFIG_SOUND_CONTROL_HAX_3_GPL
+EXPORT_SYMBOL(msm8x16_wcd_read);
+#endif
 
 static int msm8x16_wcd_dt_parse_vreg_info(struct device *dev,
 	struct msm8x16_wcd_regulator *vreg, const char *vreg_name,
@@ -3424,6 +3461,13 @@ bool is_codec_probe_done(void)
 EXPORT_SYMBOL(is_codec_probe_done);
 #endif /* CONFIG_SAMSUNG_JACK */
 
+#ifdef CONFIG_SOUND_CONTROL_HAX_3_GPL
+struct snd_soc_codec *fauxsound_codec_ptr;
+EXPORT_SYMBOL(fauxsound_codec_ptr);
+int wcd9xxx_hw_revision;
+EXPORT_SYMBOL(wcd9xxx_hw_revision);
+#endif
+
 static int msm8x16_wcd_codec_probe(struct snd_soc_codec *codec)
 {
 	struct msm8x16_wcd_priv *msm8x16_wcd_priv;
@@ -3434,6 +3478,11 @@ static int msm8x16_wcd_codec_probe(struct snd_soc_codec *codec)
 #endif
 
 	dev_dbg(codec->dev, "%s()\n", __func__);
+
+#ifdef CONFIG_SOUND_CONTROL_HAX_3_GPL
+	pr_info("msm8x16_wcd codec probe...\n");
+	fauxsound_codec_ptr = codec;
+#endif
 
 	msm8x16_wcd_priv = kzalloc(sizeof(struct msm8x16_wcd_priv), GFP_KERNEL);
 	if (!msm8x16_wcd_priv) {
@@ -3463,6 +3512,10 @@ static int msm8x16_wcd_codec_probe(struct snd_soc_codec *codec)
 	}
 	msm8x16_wcd_priv->pmic_rev = snd_soc_read(codec,
 					MSM8X16_WCD_A_DIGITAL_REVISION1);
+#ifdef CONFIG_SOUND_CONTROL_HAX_3_GPL
+		// premaca@gmail.com - not sure about this
+		wcd9xxx_hw_revision = 1;
+#endif
 	dev_dbg(codec->dev, "%s :PMIC REV: %d", __func__,
 					msm8x16_wcd_priv->pmic_rev);
 	msm8x16_wcd_bringup(codec);
