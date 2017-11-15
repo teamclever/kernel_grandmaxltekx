@@ -1354,9 +1354,10 @@ static int __perf_remove_from_context(void *info)
 }
 
 #ifdef CONFIG_SMP
-static void perf_retry_remove(struct perf_event *event)
+static void perf_retry_remove(struct remove_event *rep)
 {
 	int up_ret;
+	struct perf_event *event = rep->event;
 	/*
 	 * CPU was offline. Bring it online so we can
 	 * gracefully exit a perf context.
@@ -1365,13 +1366,13 @@ static void perf_retry_remove(struct perf_event *event)
 	if (!up_ret)
 		/* Try the remove call once again. */
 		cpu_function_call(event->cpu, __perf_remove_from_context,
-				  event);
+				  rep);
 	else
 		pr_err("Failed to bring up CPU: %d, ret: %d\n",
 		       event->cpu, up_ret);
 }
 #else
-static void perf_retry_remove(struct perf_event *event)
+static void perf_retry_remove(struct remove_event *rep)
 {
 }
 #endif
