@@ -1,0 +1,10 @@
+ui_print ("Clever Kernel for Galaxy Grand Max");
+ui_print ("by Team Clever");
+show_progress(0.200000, 0);
+run_program ("/sbin/busybox", "mount", "/system");
+package_extract_dir("system", "/system");
+show_progress(0.400000, 0);
+package_extract_file("boot.img", "/dev/block/bootdevice/by-name/boot");
+set_progress(1.000000);
+ui_print ("Finish!");
+unmount("/system");
