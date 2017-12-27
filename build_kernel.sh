@@ -23,5 +23,8 @@ echo "Repack bootimg..."
 echo "Finish"
 
 echo "Make flashable zip..."
-zip -r9 Clever-Kernel-grandmaxltekx.zip utilities/zip/META-INF utilities/zip/system utilities/zip/boot.img
+rm Clever-Kernel-grandmaxltekx.zip
+cd utilities/zip
+./zip.sh
+cd ../../
 echo "Finish"
